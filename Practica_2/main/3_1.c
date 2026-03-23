@@ -45,13 +45,13 @@ void tareaLectura(void *pvParametros)
 
     adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_6, &config);
 
-    const   TickType_t xDelayTicks = pdMS_TO_TICKS(200);
+    const   TickType_t xDelayTicks = pdMS_TO_TICKS(100);
             TickType_t xLastWakeTime = xTaskGetTickCount();
 
     for(;;)
     {
         int adc_raw = -1;
-        adc_oneshot_read(adc1_handle,ADC_CHANNEL_6, &adc_raw);
+        adc_oneshot_read(adc1_handle,ADC_CHANNEL_5, &adc_raw);
         if(!xQueueSend(handleCola, &adc_raw, pdMS_TO_TICKS(10)))
         {
             fprintf(stderr,"fallo en la cola (subir)\n");
@@ -62,7 +62,7 @@ void tareaLectura(void *pvParametros)
 
 void tareaCalculo(void *pvParametros)
 {
-    const TickType_t xDelayTicks = pdMS_TO_TICKS(150);
+    const TickType_t xDelayTicks = pdMS_TO_TICKS(75);
      TickType_t xLastWakeTime = xTaskGetTickCount();
 
     int indice_elemento_lectura = 0; 

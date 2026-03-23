@@ -5,7 +5,7 @@
 #include "driver/gpio.h"
 #include "esp_adc/adc_oneshot.h"
 
-#define STACK_SIZE 2048
+#define STACK_SIZE 4096
 
 #define LED1 GPIO_NUM_4        // Parpadeo constante
 #define LED2 GPIO_NUM_5        // Cambia con el  botón
@@ -27,7 +27,7 @@ void tarea1(void *params)
 
     for (;;) 
     {
-        gpio_set_level(LED1_GPIO, estado_led);
+        gpio_set_level(LED1, estado_led);
         estado_led = !estado_led;
         vTaskDelayUntil(&lastWakeTime, espera);
     }
@@ -48,6 +48,9 @@ void tarea2(void *params)
     for (;;) 
     {
         int level = gpio_get_level(BOTON);
+
+        
+        
         if (last_level == 1 && level == 0) 
         {
             printf("¡Botón pulsado!\n");
@@ -55,10 +58,21 @@ void tarea2(void *params)
 
             xSemaphoreGive(p->sem_t3);
 
+            char buffer[512];
+            vTaskGetRunTimeStats(buffer);
+            fprintf(stdout, "%s\n", buffer);
+
+            for(long i =0; i<2000000;++i)
+            {
+                __asm volatile ("nop");
+            }
+            
+
             vTaskDelay(pdMS_TO_TICKS(200)); // debounce
-            lastWakeTime = xTaskGetTickCount();  //Actuañlizo el momento de toma de tiempo
+            lastWakeTime = xTaskGetTickCount();  //Actualizo el momento de toma de tiempo
+
         }
-        level=0;
+        last_level=level;
         gpio_set_level(LED2, led2_state);
         vTaskDelayUntil(&lastWakeTime, espera);
     }
@@ -89,6 +103,9 @@ void tarea3(void *params)
 
 void app_main() 
 {
+
+    
+
     gpio_reset_pin(LED1);
     gpio_reset_pin(LED2);
     gpio_set_direction(LED1, GPIO_MODE_OUTPUT);
@@ -123,6 +140,7 @@ void app_main()
     xTaskCreate(tarea1, "Tarea 1", STACK_SIZE, NULL, 1, NULL);
     xTaskCreate(tarea2, "Tarea 2", STACK_SIZE, (void *)&param_adc, 1, NULL);
     xTaskCreate(tarea3, "Tarea 3", STACK_SIZE, (void *)&param_adc, 1, NULL);
+
 
     for(;;) // Para que no mate la tarea
     {

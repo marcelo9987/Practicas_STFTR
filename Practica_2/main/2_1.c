@@ -23,7 +23,7 @@
 
 void tareaPin4(void *pvParametros)
 {
-    const TickType_t xDelayTicks = pdMS_TO_TICKS(333);
+    const TickType_t xDelayTicks = pdMS_TO_TICKS(166);
 
     int estadoLed = APAGADO;
     
@@ -38,7 +38,7 @@ void tareaPin4(void *pvParametros)
 
 void tareaPin5(void *pvParametros)
 {
-    const TickType_t xDelayTicks = pdMS_TO_TICKS(107);
+    const TickType_t xDelayTicks = pdMS_TO_TICKS(83);
 
     int estadoLed = APAGADO;
     
@@ -53,6 +53,10 @@ void tareaPin5(void *pvParametros)
 
 void app_main()
 {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    
+
+
     gpio_set_direction(LED4,GPIO_MODE_OUTPUT);
     gpio_set_direction(LED5,GPIO_MODE_OUTPUT);
     gpio_set_direction(BOTON,GPIO_MODE_INPUT);
@@ -60,7 +64,7 @@ void app_main()
 
 
     TaskHandle_t xHandleTarea1 = NULL;
-        TaskHandle_t xHandleTarea2 = NULL;
+    TaskHandle_t xHandleTarea2 = NULL;
 
 
 
@@ -117,10 +121,12 @@ void app_main()
                 tiempoSolicitudReanudar = esp_timer_get_time();
                 break;
            }
+           const TickType_t xDelayTicks = pdMS_TO_TICKS(3000);
+           vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(xDelayTicks));
         }
 
-
-        vTaskDelay(pdMS_TO_TICKS(100));
+        const TickType_t xDelayTicks = pdMS_TO_TICKS(100);     
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(xDelayTicks));
     }
     
 }
