@@ -1,3 +1,20 @@
+/*
+*   Copyright (C) <2026>  Marcelo Fort Muñoz y Victor Arroyo Márquez
+*
+*   This program is free software: you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation, either version 3 of the License, or
+*   (at your option) any later version.
+*
+*   This program is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*   GNU General Public License for more details.
+*
+*   You should have received a copy of the GNU General Public License
+*   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <stdio.h>
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -17,7 +34,7 @@
 #define APAGADO     0
 #define ENCENDIDO   1
 
-#define STACK_SIZE 2*1024
+#define STACK_SIZE (2*1024)
 
 
 
@@ -96,7 +113,7 @@ void app_main()
             estado_tarea==2?"BLOCKED":
             estado_tarea==3?"SUSPENDED":"DELETED");
 
-        int64_t ahora = esp_timer_get_time(); // MICROSEGUNDOS!!
+        const int64_t ahora = esp_timer_get_time(); // MICROSEGUNDOS!!
 
         if(estado==2 && ahora-tiempoSolicitudReanudar >= 3000000) // 3s = 3*10³ms = 3*10⁶us
         {

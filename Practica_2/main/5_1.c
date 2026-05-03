@@ -1,3 +1,19 @@
+/*
+*   Copyright (C) <2026>  Marcelo Fort Muñoz y Victor Arroyo Márquez
+*
+*   This program is free software: you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation, either version 3 of the License, or
+*   (at your option) any later version.
+*
+*   This program is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*   GNU General Public License for more details.
+*
+*   You should have received a copy of the GNU General Public License
+*   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -62,10 +78,15 @@ void tarea2(void *params)
             vTaskGetRunTimeStats(buffer);
             fprintf(stdout, "%s\n", buffer);
 
-            for(long i =0; i<2000000;++i)
+            /*
+            * Para ver el efecto de la suspensión, se puede simular una tarea pesada con un bucle vacío o una función de retardo.
+             * Por ejemplo, podríamos agregar un retardo de 3 segundos aquí para simular que la tarea está ocupada haciendo algo:
+             * 
+            for(long i=0; i<2000000;++i)
             {
                 __asm volatile ("nop");
             }
+                */
             
 
             vTaskDelay(pdMS_TO_TICKS(200)); // debounce
@@ -130,6 +151,7 @@ void app_main()
     adc_oneshot_config_channel(adc_handle, ADC_CHANNEL, &chan_cfg);
 
     SemaphoreHandle_t sem_t3 = xSemaphoreCreateBinary();
+    xSemaphoreGive(sem_t3);// Up al iniciar para que no se quede bloqueada esperando el primer botón
 
     ParamADC param_adc = 
     {

@@ -1,128 +1,134 @@
+/*
+*   Copyright (C) <2026>  Marcelo Fort Muñoz y Victor Arroyo Márquez
+*
+*   This program is free software: you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation, either version 3 of the License, or
+*   (at your option) any later version.
+*
+*   This program is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*   GNU General Public License for more details.
+*
+*   You should have received a copy of the GNU General Public License
+*   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <stdio.h>
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/idf_additions.h"
-#include "freertos/projdefs.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
-#include "hal/gpio_types.h"
-#include "portmacro.h"
 #include "esp_log.h"
 #include "esp_adc/adc_oneshot.h"
-#include "esp_adc/adc_cali.h"
-#include "esp_adc/adc_cali_scheme.h"
-#include "hal/adc_types.h"
 
-
-
-
-#define APAGADO     0
-#define ENCENDIDO   1
-
-#define STACK_SIZE 4*1024
-
-#define N 12
+#define STACK_SIZE  (4 * 1024) // 4 KiB
+#define N           12
 
 QueueHandle_t handleCola = NULL;
 
-
+/* -------------------------------------------------- */
 void tareaLectura(void *pvParametros)
 {
+    const adc_oneshot_unit_handle_t adc1_handle =
+            (adc_oneshot_unit_handle_t) pvParametros;
 
-    adc_oneshot_unit_handle_t adc1_handle;
-    adc_oneshot_unit_init_cfg_t init_config =
+    const TickType_t xDelayTicks   = pdMS_TO_TICKS(200);
+    TickType_t       xLastWakeTime = xTaskGetTickCount();
+
+    for (;;)
     {
-        .unit_id = ADC_UNIT_1,
-    };
+        int adc_raw = 0;
+        adc_oneshot_read(adc1_handle, ADC_CHANNEL_5, &adc_raw);
 
-    adc_oneshot_new_unit(&init_config, &adc1_handle);
-
-    adc_oneshot_chan_cfg_t config = 
-    {
-        .atten=ADC_ATTEN_DB_12,
-        .bitwidth=ADC_BITWIDTH_DEFAULT,
-    };
-
-    adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_6, &config);
-
-    const   TickType_t xDelayTicks = pdMS_TO_TICKS(100);
-            TickType_t xLastWakeTime = xTaskGetTickCount();
-
-    for(;;)
-    {
-        int adc_raw = -1;
-        adc_oneshot_read(adc1_handle,ADC_CHANNEL_5, &adc_raw);
-        if(!xQueueSend(handleCola, &adc_raw, pdMS_TO_TICKS(10)))
+        if (!xQueueSend(handleCola, &adc_raw, 0))
         {
-            fprintf(stderr,"fallo en la cola (subir)\n");
+            fprintf(stderr, "fallo en la cola (subir)\n");
         }
+
         xTaskDelayUntil(&xLastWakeTime, xDelayTicks);
     }
 }
 
+/* -------------------------------------------------- */
 void tareaCalculo(void *pvParametros)
 {
-    const TickType_t xDelayTicks = pdMS_TO_TICKS(75);
-     TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xDelayTicks   = pdMS_TO_TICKS(200);
+    TickType_t       xLastWakeTime = xTaskGetTickCount();
 
-    int indice_elemento_lectura = 0; 
-    int datos_leidos[10] = {0};
+    int indice_elemento_lectura = 0;
+    int datos_leidos[10]        = {0};
+    int muestras_validas        = 0;
 
-
-    for(;;)
+    for (;;)
     {
-
-        if(xQueueReceive(handleCola, (datos_leidos+indice_elemento_lectura), pdMS_TO_TICKS(10)))
+        if (xQueueReceive(handleCola,
+                          &datos_leidos[indice_elemento_lectura],
+                          portMAX_DELAY))
         {
-            int media = 0;
-            for (int indice_datos = 0; indice_datos<10; ++indice_datos)
+            if (muestras_validas < 10)
             {
-                media += datos_leidos[indice_datos];
+                muestras_validas++;
             }
-            media/=10;
-            ESP_LOGI("CALCULO", "Recibido: %i; Media: %i",*(datos_leidos+indice_elemento_lectura),media); 
-            indice_elemento_lectura = (indice_elemento_lectura+1)%10;
+
+            int media = 0;
+            for (int i = 0; i < muestras_validas; i++)
+        {
+                media += datos_leidos[i];
         }
 
-        
+            media /= muestras_validas;
+
+            ESP_LOGI("CALCULO",
+                     "Recibido: %i; Media: %i",
+                     datos_leidos[indice_elemento_lectura],
+                     media);
+
+            indice_elemento_lectura =
+                    (indice_elemento_lectura + 1) % 10;
+        }
 
         xTaskDelayUntil(&xLastWakeTime, xDelayTicks);
-
-
     }
-
 }
 
-void app_main()
+/* -------------------------------------------------- */
+void app_main(void)
 {
+    handleCola = xQueueCreate(N, sizeof(int));
 
+    adc_oneshot_unit_handle_t adc1_handle;
 
-    handleCola = xQueueCreate(N,sizeof(int));
+    adc_oneshot_unit_init_cfg_t init_config = {
+        .unit_id = ADC_UNIT_1
+    };
+    adc_oneshot_new_unit(&init_config, &adc1_handle);
 
+    adc_oneshot_chan_cfg_t config = {
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_DEFAULT
+    };
+    adc_oneshot_config_channel(adc1_handle,
+                               ADC_CHANNEL_5,
+                               &config);
 
+    xTaskCreate(tareaLectura,
+                "LECTURA",
+                STACK_SIZE,
+                (void *) adc1_handle,
+                1,
+                NULL);
 
-    TaskHandle_t xHandleTareaLectura = NULL;
-    TaskHandle_t xHandleTareaCalculo = NULL;
+    xTaskCreate(tareaCalculo,
+                "CALCULO",
+                STACK_SIZE,
+                NULL,
+                1,
+                NULL);
 
-
-
-    xTaskCreate(tareaLectura
-        , "LECTURA"
-        , STACK_SIZE
-        , NULL
-        , 1
-        , &xHandleTareaLectura);
-
-    xTaskCreate(tareaCalculo
-    , "CALCULO"
-    , STACK_SIZE
-    , NULL
-    , 1
-    , &xHandleTareaCalculo);
-
-    for(;;)
+    for (;;)
     {
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
-    
 }

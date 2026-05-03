@@ -1,3 +1,20 @@
+/*
+*   Copyright (C) <2026>  Marcelo Fort Muñoz y Victor Arroyo Márquez
+*
+*   This program is free software: you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation, either version 3 of the License, or
+*   (at your option) any later version.
+*
+*   This program is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*   GNU General Public License for more details.
+*
+*   You should have received a copy of the GNU General Public License
+*   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
@@ -34,10 +51,10 @@ void tarea1(void* params)
         }
 
         printf("Tarea 1 coge mutex: %lu\n",(unsigned long)xTaskGetTickCount()*portTICK_PERIOD_MS);
-        int *array_lecturas = (int*) malloc(1000 * sizeof(int));
+        int *array_lecturas = (int*) pvPortMalloc(1000 * sizeof(int));
         if (!array_lecturas)
         {
-            fprintf(stderr, "Tarea1: malloc fallo\n");
+            fprintf(stderr, "Tarea1: pvPortMalloc fallo\n");
             xSemaphoreGive(parametros->mutex);
             vTaskDelay(xDelayTicks);
             continue;
@@ -64,7 +81,7 @@ void tarea1(void* params)
 
         lectura_minima=lectura_mas_baja<lectura_minima?lectura_mas_baja:lectura_minima;
 
-        free(array_lecturas);
+        vPortFree(array_lecturas);
         printf("Tarea 1 lectura mínima: %d | tiempo: %lu\n",lectura_minima, (unsigned long)xTaskGetTickCount()*portTICK_PERIOD_MS);
 
         xTaskDelayUntil(&xLastWakeTime, xDelayTicks);
@@ -90,10 +107,10 @@ void tarea2(void* params)
         }
 
         printf("Tarea 2 coge mutex: %lu\n",(unsigned long)xTaskGetTickCount()*portTICK_PERIOD_MS);
-        int *array_lecturas = (int*) malloc(1000 * sizeof(int));
+        int *array_lecturas = (int*) pvPortMalloc(1000 * sizeof(int));
         if (!array_lecturas)
         {
-            fprintf(stderr, "Tarea2: malloc fallo\n");
+            fprintf(stderr, "Tarea2: pvPortMalloc fallo\n");
             xSemaphoreGive(parametros->mutex);
             vTaskDelay(xDelayTicks);
             continue;
@@ -120,7 +137,7 @@ void tarea2(void* params)
 
         lectura_maxima=lectura_mas_alta>lectura_maxima?lectura_mas_alta:lectura_maxima;
 
-        free(array_lecturas);
+        vPortFree(array_lecturas);
         printf("Tarea 2 lectura máxima: %d | tiempo: %lu\n",lectura_maxima, (unsigned long)xTaskGetTickCount()*portTICK_PERIOD_MS);
 
         xTaskDelayUntil(&xLastWakeTime, xDelayTicks);
@@ -146,10 +163,10 @@ void tarea3(void* params)
         }
 
         printf("Tarea 3 coge mutex: %lu\n",(unsigned long)xTaskGetTickCount()*portTICK_PERIOD_MS);
-        int *array_lecturas = (int*) malloc(1000 * sizeof(int));
+        int *array_lecturas = (int*) pvPortMalloc(1000 * sizeof(int));
         if (!array_lecturas)
         {
-            fprintf(stderr, "Tarea3: malloc fallo\n");
+            fprintf(stderr, "Tarea3: pvPortMalloc fallo\n");
             xSemaphoreGive(parametros->mutex);
             vTaskDelay(xDelayTicks);
             continue;
@@ -173,7 +190,7 @@ void tarea3(void* params)
 
         lectura_promedio=lectura_total/1000;
 
-        free(array_lecturas);
+        vPortFree(array_lecturas);
         printf("Tarea 3 lectura promedio: %d | tiempo: %lu\n",lectura_promedio, (unsigned long)xTaskGetTickCount()*portTICK_PERIOD_MS);
 
         xTaskDelayUntil(&xLastWakeTime, xDelayTicks);
